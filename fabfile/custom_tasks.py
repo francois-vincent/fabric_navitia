@@ -2,16 +2,16 @@
 This file contains some specific tasks not to be run everytime
 """
 import os
+from fabric.api import env
 from fabric.colors import red
 from fabric.context_managers import cd, warn_only
 from fabric.contrib.files import exists
-from fabric.decorators import task, roles
+from fabric.decorators import task, roles, hosts
 from fabric.operations import run, put, sudo
 from fabric.tasks import execute
-from fabfile import utils
-from fabfile.component import db, tyr
-from fabric.api import env
 
+from fabfile import utils
+from fabfile.component import db, tyr, kraken
 
 @task
 @roles('tyr_master')
@@ -107,3 +107,28 @@ def install_system_python_protobuf():
         sudo("pip uninstall --yes protobuf")
     sudo("! (pip freeze | grep -q protobuf)")
     sudo("apt-get --yes install python-protobuf")
+
+try:
+    eng_hosts_1 = env.eng_hosts_1
+    eng_hosts_2 = env.eng_hosts_2
+except AttributeError:
+    eng_hosts_1 = ()
+    eng_hosts_2 = ()
+
+@task
+@hosts(*eng_hosts_1)
+def test_kraken1():
+    """ specific prod task to check that kraken are started on eng1
+    """
+    for instance in env.instances.values():
+        kraken.test_kraken(instance.name, fail_if_error=False, wait=True, loaded_is_ok=True)
+
+
+@task
+@hosts(*eng_hosts_2)
+def test_kraken234():
+    """ specific prod task to check that kraken are started on eng1, eng2 & eng3
+    """
+    for instance in env.instances.values():
+        kraken.test_kraken(instance.name, fail_if_error=False, wait=True, loaded_is_ok=True)
+
