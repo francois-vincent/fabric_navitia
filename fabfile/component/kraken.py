@@ -127,6 +127,14 @@ def test_all_krakens(wait=False):
         test_kraken(instance.name, fail_if_error=False, wait=wait, loaded_is_ok=True)
 
 @task
+def test_these_krakens(*hosts):
+    """test all kraken instances on a list of hosts
+    """
+    for host in hosts:
+        with settings(host=get_host_addr(host)):
+            test_all_krakens(True)
+
+@task
 @roles('eng')
 def restart_kraken(instance, test=True, wait=True):
     """Restart a kraken instance on a given server
