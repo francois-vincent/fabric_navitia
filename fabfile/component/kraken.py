@@ -168,8 +168,9 @@ def swap_data_nav(instance):
     plain_target = instance.plain_target_lz4_file
     if files.is_file(temp_target) and files.is_file(plain_target) and \
        files.getmtime(temp_target) > files.getmtime(plain_target):
-        sudo('chown www-data:www-data {}'.format(temp_target))
-        sudo('chmod 666 {}'.format(temp_target))
+        if env.name != 'prod':
+            sudo('chown www-data:www-data {}'.format(temp_target))
+            sudo('chmod 666 {}'.format(temp_target))
         swap_temp = os.path.join(os.path.dirname(temp_target), 'x')
         files.move(plain_target, swap_temp)
         files.move(temp_target, plain_target)
