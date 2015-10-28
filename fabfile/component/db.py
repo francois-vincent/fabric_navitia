@@ -275,3 +275,13 @@ def create_instance_db(instance):
 
     require.postgres.user(postgresql_user, instance.db_password)
     require.postgres.database(postgresql_database, postgresql_user)
+
+
+@task
+@roles('db')
+def create_kirin_db():
+
+    user, password, database = ('kirin', ) * 3
+
+    require.postgres.user(user, password)
+    require.postgres.database(database, user)
