@@ -282,6 +282,9 @@ def create_instance_db(instance):
 def create_kirin_db():
 
     user, password, database = ('kirin', ) * 3
+    pwd = raw_input(yellow("Please enter password (default=kirin): "))
+    if pwd:
+        password = pwd
 
     require.postgres.user(user, password)
     require.postgres.database(database, user)
