@@ -217,7 +217,6 @@ def test_jormungandr(server, instance=None, fail_if_error=True):
         request_str = 'http://{s}{p}/v1/coverage/{i}/status'.format(s=server, p=env.jormungandr_url_prefix, i=instance)
     else:
         request_str = 'http://{}{}/v1/coverage'.format(server, env.jormungandr_url_prefix)
-    print request_str
 
     try:
         response = requests.get(request_str, headers=headers, auth=HTTPBasicAuth(env.token, ''))
@@ -242,8 +241,6 @@ def test_jormungandr(server, instance=None, fail_if_error=True):
 
     # if result contain just a message, this indicate a problem
     if 'message' in result:
-        print(fail_if_error)
-        print(type(fail_if_error))
         if fail_if_error is True:
             print(red("CRITICAL: Problem on result: '{}'".format(result)))
             exit(1)
@@ -315,6 +312,7 @@ def deploy_jormungandr_instance_conf(instance):
     if fabtools.files.is_file(instance.jormungandr_old_ini_config_file):
         fabtools.files.remove(instance.jormungandr_old_ini_config_file)
 
+
 @task
 @roles('ws')
 def remove_jormungandr_instance(instance):
@@ -327,3 +325,9 @@ def remove_jormungandr_instance(instance):
     for server in env.roledefs['ws']:
         print("→ server: {}".format(server))
         execute(reload_jormun_safe, server)
+
+
+@task
+@roles('ws')
+def dummy_task():
+    run('ls -al')
