@@ -525,9 +525,9 @@ def remove_kraken_instance(instance, purge_logs=False, apply_on='engines'):
     if apply_on == 'engines':
         hosts, exclude_hosts = instance.kraken_engines, ()
     elif apply_on == 'reverse':
-        hosts, exclude_hosts = env.rolesdef['eng'], instance.kraken_engines
+        hosts, exclude_hosts = env.roledesf['eng'], instance.kraken_engines
     elif apply_on == 'all':
-        hosts, exclude_hosts = env.rolesdef['eng'], ()
+        hosts, exclude_hosts = env.roledefs['eng'], ()
     else:
         abort("Bad 'apply_on' parameter value: {}".format(apply_on))
 

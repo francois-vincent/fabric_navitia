@@ -104,6 +104,7 @@ env.APACHE_START_ONLY_ONCE = True
 # A.1- file sockets (default)
 # configuration:
 env.use_zmq_socket_file = True
+env.zmq_server = None
 # A.2- true sockets
 # configuration:
 # env.use_zmq_socket_file = False
