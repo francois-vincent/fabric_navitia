@@ -48,6 +48,7 @@ class Instance:
             self.jormungandr_zmq_socket_for_instance = self.kraken_zmq_socket
             self.zmq_server, self.kraken_engines = None, list(env.roledefs['eng'])
         elif zmq_socket_port:
+            env_zmq_server = getattr(env, 'zmq_server', None)
             if zmq_server:
                 if isinstance(zmq_server, basestring):
                     if zmq_server == 'localhost':
@@ -55,16 +56,16 @@ class Instance:
                         self.kraken_engines = list(env.roledefs['ws'])
                     else:
                         self.kraken_engines = [env.make_ssh_url(zmq_server)]
-                        self.zmq_server = env.zmq_server or zmq_server
+                        self.zmq_server = env_zmq_server or zmq_server
                 else:
                     # zmq_server is a list
-                    if env.zmq_server:
-                        self.zmq_server, self.kraken_engines = env.zmq_server, env.make_ssh_url(zmq_server)
+                    if env_zmq_server:
+                        self.zmq_server, self.kraken_engines = env_zmq_server, env.make_ssh_url(zmq_server)
                     else:
-                        abort('Platform configuration file must include a env.zmq_server specification '
+                        abort('Platform configuration file must include a env_zmq_server specification '
                               '(see fabfile.env.platforms for some instructions)')
             else:
-                self.zmq_server, self.kraken_engines = env.zmq_server, list(env.roledefs['eng'])
+                self.zmq_server, self.kraken_engines = env_zmq_server, list(env.roledefs['eng'])
             self.kraken_zmq_socket = 'tcp://*:{port}'.format(port=zmq_socket_port)
             self.jormungandr_zmq_socket_for_instance = 'tcp://{server}:{port}'.format(
                 server=self.zmq_server, port=zmq_socket_port)

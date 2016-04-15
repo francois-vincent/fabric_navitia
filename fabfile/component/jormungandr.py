@@ -49,7 +49,7 @@ from fabric.operations import run, get
 from fabric.api import execute, task, env, sudo
 from fabtools import require, python
 
-from fabfile.component import kraken, load_balancer
+from fabfile.component import load_balancer
 from fabfile.utils import (_install_packages, _upload_template, get_real_instance,
                            start_or_stop_with_delay, get_bool_from_cli, get_host_addr, show_version)
 
