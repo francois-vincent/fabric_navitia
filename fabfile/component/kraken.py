@@ -380,6 +380,8 @@ def update_eng_instance_conf(instance, host=None):
     hosts = [host] if host else instance.kraken_engines
     for host in hosts:
         with settings(host_string=host):
+            require.files.directory(os.path.join(instance.kraken_basedir, instance.name),
+                                    owner=env.KRAKEN_USER, group=env.KRAKEN_USER, use_sudo=True)
             _upload_template("kraken/kraken.ini.jinja", "%s/%s/kraken.ini" %
                              (env.kraken_basedir, instance.name),
                              context={
