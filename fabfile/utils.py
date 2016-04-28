@@ -291,13 +291,12 @@ def show_version(action='show', host='eng'):
 
 @task
 def update_init(host):
-    with settings(host_string=env.roledefs[host][0]):
-        with settings(warn_only=True):
-            result = run('which systemd')
-        if result == '':
-            print('systemd is not installed')
-        else:
+    with settings(host_string=env.roledefs[host][0],
+                  warn_only=True):
+        if run('which systemd'):
             run('systemctl daemon-reload')
+        else:
+            print('systemd is not installed')
 
 
 class send_mail(object):

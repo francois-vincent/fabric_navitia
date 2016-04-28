@@ -102,44 +102,20 @@ def get_no_data_instances():
             instance_has_data = test_kraken(instance, fail_if_error=False, hosts=[host])
             if not instance_has_data:
                 target_file = instance.kraken_database
-                if not exists(target_file):
+                if env.host_string:
+                    target_file_exists = exists(target_file)
+                else:
+                    with settings(host_string=host):
+                        target_file_exists = exists(target_file)
+                if not target_file_exists:
+                    env.excluded_instances.append(instance.name)
                     print(blue("NOTICE: no data for {}, append it to exclude list"
                                .format(instance.name)))
-                    #we need to add a property to instances
-                    env.excluded_instances.append(instance.name)
                 else:
                     print(red("CRITICAL: instance {} is not available but *has* a "
                         "{}, please inspect manually".format(instance.name, target_file)))
                 break
 
-
-@task
-@serial
-def disable_rabbitmq_standalone():
-    """ Disable rabbitmq via network or by changing tyr configuration
-        We can't just stop rabbitmq as tyr need it to start
-    """
-    for instance in env.instances.values():
-        with settings(hosts=instance.kraken_engines):
-            # break kraken configuration and restart all instances to enable it
-            sed("%s/%s/kraken.ini" % (env.kraken_basedir, instance.name),
-                "^port = %s$" % env.KRAKEN_RABBITMQ_OK_PORT,
-                "port = %s" % env.KRAKEN_RABBITMQ_WRONG_PORT)
-        restart_kraken(instance, test=False)
-
-
-@task
-@serial
-def enable_rabbitmq_standalone():
-    """ Enable rabbitmq via network or by changing tyr configuration
-    """
-    for instance in env.instances.values():
-        with settings(hosts=instance.kraken_engines):
-            # restore kraken configuration and restart all instances to enable it
-            sed("%s/%s/kraken.ini" % (env.kraken_basedir, instance.name),
-                "^port = %s$" % env.KRAKEN_RABBITMQ_WRONG_PORT,
-                "port = %s" % env.KRAKEN_RABBITMQ_OK_PORT)
-        restart_kraken(instance, test=False)
 
 @task
 @roles('eng')
@@ -242,8 +218,8 @@ def check_dead_instances():
             if not result or result['status'] == 'timeout' or result['loaded'] is False:
                 dead += 1
     if dead >= int(threshold):
-        print(red("The threshold of allowed dead instance is exceeded."
-                  "There are {} dead instances.".format(dead)))
+        print(red("The threshold of allowed dead instances is exceeded: "
+                  "Found {} dead instances out of {}.".format(dead, len(env.instances))))
         exit(1)
 
     installed_kraken, candidate_kraken = show_version(action='get')
@@ -294,34 +270,6 @@ def stop_kraken(instance):
     for host in instance.kraken_engines:
         with settings(host_string=host):
             start_or_stop_with_delay(kraken, 4000, 500, start=False, only_once=True)
-
-
-@task
-def get_kraken_config(server, instance):
-    """Get kraken configuration of a given instance"""
-    # TODO this task is never used and it looks like a function (inconsistent)
-
-    instance = get_real_instance(instance)
-    
-    with settings(host_string=env.make_ssh_url(server)):
-        config_path = "%s/%s/kraken.ini" % (env.kraken_basedir, instance.name)
-
-        # first get the configfile here
-        temp_file = StringIO.StringIO()
-        if exists(config_path):
-            get(config_path, temp_file)
-        else:
-            print(red("ERROR: can't find %s" % config_path))
-            exit(1)
-
-        config = ConfigParser.RawConfigParser(allow_no_value=True)
-        config_text = temp_file.getvalue()
-        config.readfp(BytesIO(config_text))
-
-        if 'GENERAL' in config.sections():
-            return config
-        else:
-            return None
 
 
 def _test_kraken(query, fail_if_error=True):
@@ -415,29 +363,6 @@ def test_kraken(instance, fail_if_error=True, wait=False, loaded_is_ok=None, hos
             if fail_if_error:
                 abort('')
 
-
-@task
-@roles('eng')
-def disable_rabbitmq_kraken():
-    """ Disable kraken rabbitmq connection through iptables
-    """
-
-    if env.dry_run is True:
-        print("iptables --append OUTPUT --protocol tcp -m tcp --dport 5672 --jump DROP")
-    else:
-        run("iptables --flush")
-        run("iptables --append OUTPUT --protocol tcp -m tcp --dport 5672 --jump DROP")
-
-
-@task
-@roles('eng')
-def enable_rabbitmq_kraken():
-    """ Enable kraken rabbitmq connection through iptables
-    """
-    if env.dry_run is True:
-        print("iptables --delete OUTPUT --protocol tcp -m tcp --dport 5672 --jump DROP")
-    else:
-        run("iptables --delete OUTPUT --protocol tcp -m tcp --dport 5672 --jump DROP")
 
 @task
 @roles('eng')
