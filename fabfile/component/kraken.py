@@ -102,11 +102,8 @@ def get_no_data_instances():
             instance_has_data = test_kraken(instance, fail_if_error=False, hosts=[host])
             if not instance_has_data:
                 target_file = instance.kraken_database
-                if env.host_string:
+                with settings(host_string=host):
                     target_file_exists = exists(target_file)
-                else:
-                    with settings(host_string=host):
-                        target_file_exists = exists(target_file)
                 if not target_file_exists:
                     env.excluded_instances.append(instance.name)
                     print(blue("NOTICE: no data for {}, append it to exclude list"
