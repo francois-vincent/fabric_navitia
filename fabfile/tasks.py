@@ -32,7 +32,7 @@
 import datetime
 import os
 
-from fabric.api import run, env, task, execute, roles, abort
+from fabric.api import run, env, task, execute, roles, abort, sudo
 from fabric.colors import blue, red, yellow, green
 from fabric.contrib.files import exists
 
@@ -455,3 +455,9 @@ def remove_instance(instance, admin=False):
     execute(jormungandr.remove_jormungandr_instance, instance)
     if admin and env.use_load_balancer:
         execute(remove_kraken_vip, instance)
+
+
+@task
+@roles('tyr', 'eng', 'ws', 'db')
+def fix_setuptools():
+    sudo('pip install -U setuptools')
