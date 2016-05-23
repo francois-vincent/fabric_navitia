@@ -160,7 +160,7 @@ def upgrade_tyr_packages():
     #we want the version of the system for these packages
     run('''sed -e "/protobuf/d" -e "/psycopg2/d"  /usr/share/tyr/requirements.txt > /tmp/tyr_requirements.txt''')
     run('git config --global url."https://".insteadOf git://')
-    require.python.install_requirements('/tmp/tyr_requirements.txt', use_sudo=True, exists_action='w', upgrade=True)
+    require.python.install_requirements('/tmp/tyr_requirements.txt', use_sudo=True, exists_action='w')
     if env.use_systemd:
         _upload_template('tyr/systemd_tyr_worker.jinja', env.service_name('tyr_worker'),
                          user='root', mode='644', context={'env': env})

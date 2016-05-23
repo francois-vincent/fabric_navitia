@@ -117,8 +117,7 @@ def upgrade_ws_packages():
     run('git config --global url."https://".insteadOf git://')
     require.python.install_requirements('/tmp/jormungandr_requirements.txt',
             use_sudo=True,
-            exists_action='w',
-            upgrade=True)
+            exists_action='w')
 
 
 @task
