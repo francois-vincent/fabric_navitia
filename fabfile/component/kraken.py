@@ -33,6 +33,7 @@ import os.path
 from retrying import Retrying
 import simplejson as json
 import requests
+import time
 
 from fabric.api import task, env, sudo, execute
 from fabric.colors import blue, red, green, yellow
@@ -417,8 +418,8 @@ def update_eng_instance_conf(instance, host=None):
 
 @task
 def create_eng_instance(instance):
-    """Create a new kraken instance
-        * Install requirements (idem potem)
+    """ Create a new kraken instance (idempotent)
+        * Install requirements
         * Deploy the binary, the templatized ini configuration in a dedicated
           directory with rights to www-data and the logdir
         * Deploy initscript and add it to startup
@@ -442,23 +443,23 @@ def create_eng_instance(instance):
                 idempotent_symlink("/usr/bin/kraken", kraken_bin, use_sudo=True)
                 sudo('chown -h {user} {bin}'.format(user=env.KRAKEN_USER, bin=kraken_bin))
 
-            #run("chmod 755 /etc/init.d/kraken_{}".format(instance))
-            # TODO refactor this and test it on systemd and non-systemd machines
-            if not env.use_systemd:
-                sudo("update-rc.d kraken_{} defaults".format(instance.name))
-            print(blue("INFO: Kraken {instance} instance is starting on {server}, "
-                       "waiting 5 seconds, we will check if processus is running".format(
-                instance=instance.name, server=get_host_addr(env.host_string))))
+            kraken = "kraken_{}".format(instance.name)
+            if not service.is_running(kraken):
+                # TODO test this on systemd machines
+                if env.use_systemd:
+                    sudo("systemctl enable kraken_{}.service".format(instance.name))
+                else:
+                    sudo("update-rc.d kraken_{} defaults".format(instance.name))
+                print(blue("INFO: kraken {instance} instance is starting on {server}, "
+                           "waiting 5 seconds, we will check if processus is running"
+                    .format(instance=instance.name, server=get_host_addr(env.host_string))))
+                service.start(kraken)
+                run("sleep 5")  # we wait a bit for the kraken to pop
 
-            service.start("kraken_{}".format(instance.name))
-            run("sleep 5")  # we wait a bit for the kraken to pop
-
-            # test it !
-            # execute(test_kraken, get_host_addr(env.host_string), instance, fail_if_error=False)
             with settings(warn_only=True):
                 run("pgrep --list-name --full /srv/kraken/{}/kraken".format(instance.name))
             print(blue("INFO: kraken {instance} instance is running on {server}".
-                       format(instance=instance.name, server=get_host_addr(env.host_string))))
+                       format(instance=instance.name, server=get_host_addr(host))))
 
 
 @task
@@ -489,11 +490,35 @@ def remove_kraken_instance(instance, purge_logs=False, apply_on='engines'):
             host_string=host,
             warn_only=True
         ):
-            sudo("service kraken_{} stop && sleep 3".format(instance.name))
+            print("INFO: removing kraken instance {} from {}".format(instance.name, get_host_addr(host)))
 
-            if not env.use_systemd:
-                run("update-rc.d -f kraken_{} remove".format(instance.name))
-            sudo("rm -f {}/kraken_{}".format(env.service_path(), instance.name))
-            sudo("rm -rf {}/{}/".format(env.kraken_basedir, instance.name))
+            service.stop('kraken_{}'.format(instance.name))
+            run("sleep 3")
+            # TODO test this on systemd machines
+            if env.use_systemd:
+                run("systemctl disable kraken_{}.service".format(instance.name))
+                run('systemctl daemon-reload')
+            run("rm -f {}/kraken_{}".format(env.service_path(), instance.name))
+            run("rm -rf {}/{}/".format(env.kraken_basedir, instance.name))
             if purge_logs:
-                sudo("rm -f {}/{}.log".format(env.kraken_log_basedir, instance.name))
+                run("rm -f {}/{}.log".format(env.kraken_log_basedir, instance.name))
+
+
+@task
+def redistribute_kraken(instance):
+    """
+    Redistributes an existing kraken on eng engines.
+    Call this task when the zmq_server parameter of add_instance is changed.
+    """
+    instance = get_real_instance(instance)
+    execute(create_eng_instance, instance)
+    execute(remove_kraken_instance, instance, purge_logs=True, apply_on='reverse')
+
+
+@task
+def redistribute_all_krakens():
+    """
+    Redistributes all krakens on eng engines according to zmq_server parameters
+    """
+    for instance in env.instances.values():
+        redistribute_kraken(instance)
