@@ -18,15 +18,10 @@ from fabric import api
 
 import utils
 
-fabric_navitia_path = None
-for x in sys.path:
-    if 'fabric_navitia' in x and 'fabric_navitia' == [y for y in x.split('/') if y][-1]:
-        fabric_navitia_path = x
-        break
-if not fabric_navitia_path:
-    raise RuntimeError("Could not find module 'fabric_navitia', please set PYTHONPATH accordingly")
+import fabfile
 
 ROOT = os.path.basename(os.path.dirname(__file__))
+fabric_navitia_path = os.path.dirname(os.path.dirname(fabfile.__file__))
 
 with utils.cd(fabric_navitia_path):
     fabric_tasks = utils.Command('fab no_such_task').stdout_column(0, 2)
