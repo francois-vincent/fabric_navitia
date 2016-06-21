@@ -66,8 +66,6 @@ def _test_test_kraken_nowait_nofail(platform, capsys, map, ret_val):
         assert fabric.execute('test_kraken', krak, fail_if_error=False).values()[0] is ret_val
         out, err = capsys.readouterr()
         assert 'http://{}:80/monitor-kraken/?instance={}'.format(platform.get_hosts()[host], krak) in out
-        # TODO fix on Jenkins
         assert "OK: instance %s has correct values: {u'status': u'running', u'is_realtime_loaded': False, " \
                "u'start_production_date': u'', u'last_load': u'not-a-date-time', u'end_production_date': u'', " \
-               "u'loaded': False, u'publication_date': u'', u'last_load_status': True, " \
-               "u'is_connected_to_rabbitmq': True}" % krak in out
+               "u'loaded': False, u'publication_date': u'', u'last_load_status': True" % krak in out
