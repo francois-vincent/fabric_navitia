@@ -253,7 +253,7 @@ def test_redeploy_kraken_swap(duplicated, capsys):
     assert set(get_running_krakens(platform, 'host2')) == {'toto'} | nominal_krakens['host2']
 
 
-@skipifdev
+# @skipifdev
 def test_redeploy_kraken_reduce(duplicated, capsys):
     platform, fabric = duplicated
     add_instance = fabric.get_object('instance.add_instance')
@@ -268,7 +268,7 @@ def test_redeploy_kraken_reduce(duplicated, capsys):
     # with fabric.set_call_tracker('component.kraken.create_eng_instance',
     #                              'component.kraken.remove_kraken_instance') as data:
     #     value, exception, stdout, stderr = fabric.execute_forked('redeploy_kraken', 'toto')
-    fabric.execute('redeploy_kraken', 'toto')
+    fabric.execute('redeploy_kraken', 'toto', create=False)
     stdout, stderr = capsys.readouterr()
 
     assert 'INFO: kraken toto instance is running on {}'.format(platform.get_hosts()['host2']) in stdout
@@ -298,7 +298,7 @@ def test_redeploy_all_krakens(duplicated):
         assert 'INFO: kraken {} instance is running on {}'.format(instance, host2) in stdout
 
 
-# @skipifdev
+@skipifdev
 def test_upgrade_engine_packages(duplicated):
     platform, fabric = duplicated
 
@@ -310,7 +310,7 @@ def test_upgrade_engine_packages(duplicated):
     assert platform.path_exists('/usr/bin/kraken.old')
 
 
-# @skipifdev
+@skipifdev
 def test_rollback_instance(duplicated):
     platform, fabric = duplicated
 

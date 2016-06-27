@@ -583,20 +583,25 @@ def check_kraken_data_synchronization():
 
 
 @task
-def redeploy_kraken(instance):
+def redeploy_kraken(instance, create=True):
     """
     Redistributes an existing kraken on eng engines.
     Call this task when the zmq_server parameter of add_instance is changed.
+    Use create=False if krakens mapping is reduced (this avoids restarting them).
+    Use create=True if krakens are displaced or mapping is expanded.
     """
     instance = get_real_instance(instance)
-    execute(create_eng_instance, instance)
+    create = get_bool_from_cli(create)
+    if create:
+        execute(create_eng_instance, instance)
     execute(remove_kraken_instance, instance, purge_logs=True, apply_on='reverse')
 
 
 @task
-def redeploy_all_krakens():
+def redeploy_all_krakens(create=True):
     """
     Redistributes all krakens on eng engines according to zmq_server parameters
     """
+    create = get_bool_from_cli(create)
     for instance in env.instances.values():
-        redeploy_kraken(instance)
+        redeploy_kraken(instance, create)
