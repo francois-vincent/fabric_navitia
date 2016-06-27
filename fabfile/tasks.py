@@ -435,7 +435,7 @@ def update_all_configurations():
 
 
 @task
-def update_instance(instance):
+def update_instance(instance, reload_jormun=True):
     """
     param (instance) - update all configuration and restart all services
     does not deploy any packages
@@ -451,6 +451,8 @@ def update_instance(instance):
     execute(kraken.create_eng_instance, instance)
     execute(tyr.deploy_default_synonyms, instance)
     execute(db.create_privileges_instance_db, instance)
+    if reload_jormun:
+        execute(jormungandr.reload_jormun_safe_all)
 
 
 @task

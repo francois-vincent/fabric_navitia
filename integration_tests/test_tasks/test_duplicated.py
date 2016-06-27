@@ -114,13 +114,13 @@ def test_upgrade_all_load_balancer(duplicated):
 @skipifdev
 def test_remove_instance(duplicated):
     platform, fabric = duplicated
-
     # postgres is really long to warm up !
     time.sleep(15)
 
     # set up a server for tyr API on host1 and start it
     platform.scp(os.path.join(ROOTDIR, 'tyr-api.conf'), '/etc/apache2/conf-enabled/tyr-api.conf', 'host1')
     platform.docker_exec('service apache2 restart', 'host1')
+    assert requests.get('http://{}/v0/instances/us-wa'.format(fabric.env.tyr_url)).json()
 
     value, exception, stdout, stderr = fabric.execute_forked('tasks.remove_instance', 'us-wa')
     assert exception is None
@@ -141,3 +141,33 @@ def test_remove_instance(duplicated):
     assert platform.path_exists('/etc/init.d/kraken_us-wa', negate=True)
     assert platform.path_exists('/srv/kraken/us-wa', negate=True)
     assert platform.path_exists('/etc/jormungandr.d/us-wa.json', negate=True)
+
+
+@skipifdev
+def test_update_instance(duplicated):
+    platform, fabric = duplicated
+    # postgres is really long to warm up !
+    time.sleep(15)
+
+    # set up a server for tyr API on host1 and start it
+    platform.scp(os.path.join(ROOTDIR, 'tyr-api.conf'), '/etc/apache2/conf-enabled/tyr-api.conf', 'host1')
+    platform.docker_exec('service apache2 restart', 'host1')
+
+    # create a new instance
+    add_instance = fabric.get_object('instance.add_instance')
+    add_instance('toto', 'passwd', zmq_socket_port=30004)
+
+    with fabric.set_call_tracker('component.kraken.create_eng_instance',
+                                 'component.jormungandr.deploy_jormungandr_instance_conf') as data:
+        value, exception, stdout, stderr = fabric.execute_forked('tasks.update_instance', 'toto')
+    assert exception is None
+
+    max_sleep, step = 30, 5
+    while max_sleep:
+        max_sleep -= step
+        time.sleep(step)
+        if requests.get('http://{}/v0/instances/toto'.format(fabric.env.tyr_url)).json():
+            break
+    assert requests.get('http://{}/v0/instances/toto'.format(fabric.env.tyr_url)).json()[0]['name'] == 'toto'
+    assert len(data()['create_eng_instance']) == 1
+    assert len(data()['deploy_jormungandr_instance_conf']) == 1
